@@ -15,7 +15,6 @@ create table products (
   name text not null,
   sku text,
   stock integer not null default 0,
-  min_stock integer not null default 0,
   created_at timestamptz not null default now()
 );
 
@@ -34,6 +33,8 @@ alter table movements enable row level security;
 create policy "Acesso público products" on products for all using (true) with check (true);
 create policy "Acesso público movements" on movements for all using (true) with check (true);
 ```
+
+> O alerta "COMPRAR" aparece automaticamente quando o estoque de um produto fica menor que 10 unidades. Para mudar esse número, edite a constante `LOW_STOCK_LIMIT` no início do arquivo `app.js`.
 
 > ⚠️ As políticas acima liberam leitura e escrita para qualquer pessoa que tenha a URL do seu projeto. Isso é aceitável para um app pessoal/uso interno simples. Se quiser exigir login, veja a seção "Adicionar autenticação" abaixo.
 

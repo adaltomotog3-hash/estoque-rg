@@ -6,6 +6,7 @@
 // ===================================================================
 
 const CONFIG_KEY = 'estoque_supabase_config';
+const LOW_STOCK_LIMIT = 10; // alerta "COMPRAR" quando o saldo for menor que isso
 let supabase = null;
 let state = {
   products: [],
@@ -22,6 +23,7 @@ window.addEventListener('DOMContentLoaded', () => {
     showSetupScreen();
   }
   bindStaticEvents();
+  updateMoveNoteLabel();
 });
 
 function getSavedConfig() {
@@ -104,6 +106,7 @@ function bindStaticEvents() {
       document.querySelectorAll('.move-type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       state.currentMoveType = btn.dataset.type;
+      updateMoveNoteLabel();
     });
   });
 
@@ -115,6 +118,18 @@ function switchScreen(name) {
   document.querySelectorAll('.view').forEach(v => v.hidden = true);
   document.getElementById('screen-' + name).hidden = false;
   if (name === 'movements') populateProductSelect();
+}
+
+function updateMoveNoteLabel() {
+  const label = document.getElementById('move-note-label');
+  const input = document.getElementById('move-note');
+  if (state.currentMoveType === 'saida') {
+    label.textContent = 'Pra onde foi (opcional)';
+    input.placeholder = 'Ex: instalação cliente João, rua X';
+  } else {
+    label.textContent = 'Situação (opcional)';
+    input.placeholder = 'Ex: compra fornecedor X';
+  }
 }
 
 // ---------- CARREGAR DADOS ----------
@@ -164,13 +179,13 @@ function renderDashboard() {
     return;
   }
   list.innerHTML = state.products.map(p => {
-    const low = p.min_stock > 0 && p.stock <= p.min_stock;
+    const low = p.stock < LOW_STOCK_LIMIT;
     return `<div class="product-row ${low ? 'low-stock' : ''}">
       <div class="product-info">
         <span class="product-name">${escapeHtml(p.name)}</span>
         ${p.sku ? `<span class="product-sku">${escapeHtml(p.sku)}</span>` : ''}
       </div>
-      <span class="product-qty ${low ? 'low' : ''}">${p.stock}</span>
+      <span class="product-qty ${low ? 'low' : ''}">${p.stock}${low ? ' · COMPRAR' : ''}</span>
     </div>`;
   }).join('');
 }
@@ -186,15 +201,18 @@ function renderProductsTable() {
     </div>`;
     return;
   }
-  container.innerHTML = state.products.map(p => `
+  container.innerHTML = state.products.map(p => {
+    const low = p.stock < LOW_STOCK_LIMIT;
+    return `
     <div class="product-edit-row" data-id="${p.id}">
       <div class="product-info">
         <span class="product-name">${escapeHtml(p.name)}</span>
-        <span class="product-sku">${p.sku ? escapeHtml(p.sku) + ' · ' : ''}estoque: ${p.stock}</span>
+        <span class="product-sku">${p.sku ? escapeHtml(p.sku) + ' · ' : ''}estoque: ${p.stock}${low ? ' · COMPRAR' : ''}</span>
       </div>
       <span class="product-qty">›</span>
     </div>
-  `).join('');
+  `;
+  }).join('');
   container.querySelectorAll('.product-edit-row').forEach(row => {
     row.addEventListener('click', () => {
       const product = state.products.find(p => p.id === row.dataset.id);
@@ -213,7 +231,6 @@ function openProductModal(product = null) {
     document.getElementById('product-name').value = product.name;
     document.getElementById('product-sku').value = product.sku || '';
     document.getElementById('product-stock').value = product.stock;
-    document.getElementById('product-min').value = product.min_stock || 0;
     document.getElementById('btn-delete-product').hidden = false;
   } else {
     document.getElementById('modal-product-title').textContent = 'Novo produto';
@@ -233,7 +250,6 @@ async function handleSaveProduct(e) {
   const name = document.getElementById('product-name').value.trim();
   const sku = document.getElementById('product-sku').value.trim();
   const stock = parseInt(document.getElementById('product-stock').value, 10) || 0;
-  const minStock = parseInt(document.getElementById('product-min').value, 10) || 0;
 
   const errBox = document.getElementById('product-error');
   errBox.hidden = true;
@@ -244,7 +260,7 @@ async function handleSaveProduct(e) {
     return;
   }
 
-  const payload = { name, sku: sku || null, stock, min_stock: minStock };
+  const payload = { name, sku: sku || null, stock };
   let error;
   if (id) {
     ({ error } = await supabase.from('products').update(payload).eq('id', id));
@@ -362,7 +378,7 @@ function renderHistory() {
   }
   container.innerHTML = state.movements.map(m => {
     const isIn = m.type === 'entrada';
-    const date = new Date(m.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const date = new Date(m.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     const productName = m.products ? m.products.name : 'Produto removido';
     return `<div class="history-row ${isIn ? 'in' : 'out'}">
       <div class="history-info">

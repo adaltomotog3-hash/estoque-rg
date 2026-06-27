@@ -6,7 +6,7 @@
 <title>Estoque</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -32,7 +32,7 @@
 
   <header class="topbar">
     <div class="brand">
-      <span class="brand-mark">⌸</span>
+      <span class="brand-mark">◈</span>
       <span class="brand-text">ESTOQUE</span>
     </div>
     <button id="btn-settings" class="icon-btn" title="Configurações">⚙</button>
@@ -98,7 +98,7 @@
       <label for="move-qty">Quantidade</label>
       <input id="move-qty" type="number" min="1" step="1" required>
 
-      <label for="move-note">Observação (opcional)</label>
+      <label for="move-note" id="move-note-label">Situação / Destino (opcional)</label>
       <input id="move-note" type="text" placeholder="Ex: compra fornecedor X">
 
       <button type="submit" class="btn btn-primary">Registrar movimentação</button>
@@ -142,8 +142,6 @@
       <input id="product-sku" type="text" placeholder="Ex: PRF-001">
       <label for="product-stock">Estoque inicial</label>
       <input id="product-stock" type="number" min="0" step="1" value="0" required>
-      <label for="product-min">Estoque mínimo (alerta)</label>
-      <input id="product-min" type="number" min="0" step="1" value="0">
       <div class="modal-actions">
         <button type="button" id="btn-delete-product" class="btn btn-danger" hidden>Excluir</button>
         <button type="button" id="btn-cancel-product" class="btn btn-ghost">Cancelar</button>
