@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Estoque</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- TELA: CONFIGURAÇÃO (primeira vez, sem credenciais Supabase) -->
+<section id="screen-setup" class="screen">
+  <div class="setup-card">
+    <div class="setup-stamp">CONFIGURAR</div>
+    <h1>Ligar ao banco de dados</h1>
+    <p class="setup-text">Cole a URL e a chave pública (anon key) do seu projeto Supabase. Isso fica salvo só no seu navegador.</p>
+    <label for="input-url">URL do projeto</label>
+    <input id="input-url" type="text" placeholder="https://xxxxx.supabase.co" autocomplete="off">
+    <label for="input-key">Chave anônima (anon key)</label>
+    <input id="input-key" type="text" placeholder="eyJhbGciOiJ..." autocomplete="off">
+    <button id="btn-save-config" class="btn btn-primary">Conectar</button>
+    <p class="setup-help">Não tem um projeto ainda? Veja <code>README.md</code> no repositório para o passo a passo (gratuito, leva 3 minutos).</p>
+    <p id="setup-error" class="setup-error" hidden></p>
+  </div>
+</section>
+
+<!-- APP PRINCIPAL -->
+<div id="app" hidden>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">⌸</span>
+      <span class="brand-text">ESTOQUE</span>
+    </div>
+    <button id="btn-settings" class="icon-btn" title="Configurações">⚙</button>
+  </header>
+
+  <!-- TELA: DASHBOARD -->
+  <section id="screen-dashboard" class="screen view">
+    <div class="dash-grid">
+      <div class="metric-card metric-total">
+        <span class="metric-label">Total de produtos</span>
+        <span class="metric-value" id="metric-products">0</span>
+      </div>
+      <div class="metric-card metric-stock">
+        <span class="metric-label">Itens em estoque</span>
+        <span class="metric-value" id="metric-stock">0</span>
+      </div>
+      <div class="metric-card metric-in">
+        <span class="metric-label">Total de entradas</span>
+        <span class="metric-value" id="metric-in">0</span>
+      </div>
+      <div class="metric-card metric-out">
+        <span class="metric-label">Total de saídas</span>
+        <span class="metric-value" id="metric-out">0</span>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h2>Produtos</h2>
+    </div>
+    <div id="product-list" class="product-list">
+      <div class="empty-state">
+        <span class="empty-icon">📭</span>
+        <p>Nenhum produto cadastrado.</p>
+        <p class="empty-sub">Toque em "Produtos" para adicionar.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TELA: PRODUTOS -->
+  <section id="screen-products" class="screen view" hidden>
+    <div class="section-head">
+      <h2>Produtos</h2>
+      <button id="btn-new-product" class="btn btn-primary btn-sm">+ Novo</button>
+    </div>
+    <div id="products-table" class="products-table"></div>
+  </section>
+
+  <!-- TELA: MOVIMENTAR -->
+  <section id="screen-movements" class="screen view" hidden>
+    <div class="section-head">
+      <h2>Movimentar</h2>
+    </div>
+    <form id="form-movement" class="move-form">
+      <label for="move-product">Produto</label>
+      <select id="move-product" required></select>
+
+      <label>Tipo de movimentação</label>
+      <div class="move-type-toggle">
+        <button type="button" class="move-type-btn active" data-type="entrada">↓ Entrada</button>
+        <button type="button" class="move-type-btn" data-type="saida">↑ Saída</button>
+      </div>
+
+      <label for="move-qty">Quantidade</label>
+      <input id="move-qty" type="number" min="1" step="1" required>
+
+      <label for="move-note">Observação (opcional)</label>
+      <input id="move-note" type="text" placeholder="Ex: compra fornecedor X">
+
+      <button type="submit" class="btn btn-primary">Registrar movimentação</button>
+      <p id="move-error" class="setup-error" hidden></p>
+    </form>
+  </section>
+
+  <!-- TELA: HISTÓRICO -->
+  <section id="screen-history" class="screen view" hidden>
+    <div class="section-head">
+      <h2>Histórico</h2>
+    </div>
+    <div id="history-list" class="history-list"></div>
+  </section>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-screen="dashboard">
+      <span class="tab-icon">📊</span><span class="tab-label">Início</span>
+    </button>
+    <button class="tab-btn" data-screen="products">
+      <span class="tab-icon">📦</span><span class="tab-label">Produtos</span>
+    </button>
+    <button class="tab-btn" data-screen="movements">
+      <span class="tab-icon">🔄</span><span class="tab-label">Movimentar</span>
+    </button>
+    <button class="tab-btn" data-screen="history">
+      <span class="tab-icon">📋</span><span class="tab-label">Histórico</span>
+    </button>
+  </nav>
+</div>
+
+<!-- MODAL: NOVO/EDITAR PRODUTO -->
+<div id="modal-product" class="modal-overlay" hidden>
+  <div class="modal-card">
+    <h3 id="modal-product-title">Novo produto</h3>
+    <form id="form-product">
+      <input type="hidden" id="product-id">
+      <label for="product-name">Nome</label>
+      <input id="product-name" type="text" required placeholder="Ex: Caixa de parafusos">
+      <label for="product-sku">Código (SKU, opcional)</label>
+      <input id="product-sku" type="text" placeholder="Ex: PRF-001">
+      <label for="product-stock">Estoque inicial</label>
+      <input id="product-stock" type="number" min="0" step="1" value="0" required>
+      <label for="product-min">Estoque mínimo (alerta)</label>
+      <input id="product-min" type="number" min="0" step="1" value="0">
+      <div class="modal-actions">
+        <button type="button" id="btn-delete-product" class="btn btn-danger" hidden>Excluir</button>
+        <button type="button" id="btn-cancel-product" class="btn btn-ghost">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+      <p id="product-error" class="setup-error" hidden></p>
+    </form>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
+</body>
+</html>
